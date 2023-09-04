@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 const axios = require('axios');
 const fs = require('fs');
 require('dotenv').config();
+const xlsx = require('xlsx');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -70,7 +71,7 @@ app.get('/show/excel', async (req, res) => {
 
         const files = res.data.files;
 
-        console.log(files);
+        // console.log(files);
         if (files.length === 0) {
             console.log('No files found.');
             return;
@@ -103,7 +104,7 @@ async function downloadFile(fileId) {
     });
 
     const file = response.data.files;
-    console.log('file: ', file);
+    // console.log('file: ', file);
     downloadFileExcel(file[0].id)
 
 
@@ -163,22 +164,44 @@ async function downloadFile(fileId) {
 }
 
 async function downloadFileExcel(fileId) {
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+     const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    const response = await drive.files.get({
+        fileId,
+        // permissions
+        // fields: 'id, name, mimeType, modifiedTime, webViewLink, webContentLink, fileExtension, owners'
+        fields:'*'
+    });
+    console.log('response: ', response.data);
+
+    let path = 'D:/All Projects/Node/node-drive/downloaded-files.xlsx'
+    const workbook = xlsx.readFile(path);
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    console.log('Data from Excel:', data);
+ 
+
+
+}
+// async function downloadFileExcel(fileId) {
+//     const drive = google.drive({ version: 'v3', auth: oauth2Client });
   
-    const response = await drive.files.get({ fileId, alt: 'media' }, {responseType: 'stream' });
-    const fileContent = response.data;
+//     const response = await drive.files.get({ fileId, alt: 'media' }, {responseType: 'stream' });
 
-    // Replace 'downloaded-files.xlsx' with the desired destination path and file name
-    const destinationPath = 'downloaded-files.xlsx';
+//     const destinationPath = 'downloaded-files.xlsx';
 
-    // fs.createWriteStream(destinationPath, fileContent);
-    const writeStream = fs.createWriteStream(destinationPath);
-    response.data.pipe(writeStream);
+//     const writeStream = fs.createWriteStream(destinationPath);
+//     response.data.pipe(writeStream);
 
-    console.log(`File ${fileId} downloaded successfully.`);
+//     console.log(`File ${fileId} downloaded successfully.`);
+ 
 
-     
-  }
+
+// }
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
